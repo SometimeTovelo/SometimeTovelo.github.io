@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>赛博烧纸</title>
+    <style>
+      :root {
+        --fire-red: #e62222;
+        --fire-orange: #ff9000;
+        --fire-yellow: #ffec00;
+        --paper-gold: #ffd700;
+      }
+
+      body {
+        margin: 0;
+        background: #050505;
+        color: #d4af37;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        touch-action: manipulation; /* 优化移动端点击延迟 */
+      }
+
+      /* 响应式UI面板 */
+      .ui-panel {
+        position: relative;
+        z-index: 100;
+        background: rgba(25, 15, 5, 0.95);
+        padding: 15px;
+        border-bottom: 2px solid #5d4037;
+        width: 100%;
+        box-sizing: border-box;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
+      }
+
+      @media (min-width: 768px) {
+        .ui-panel {
+          position: absolute;
+          left: 20px;
+          top: 20px;
+          width: 300px;
+          border: 2px solid #5d4037;
+          border-radius: 12px;
+        }
+      }
+
+      h1 {
+        font-size: 1.1rem;
+        margin: 0 0 10px 0;
+        text-align: center;
+        color: #ff9900;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .input-group {
+        flex: 1;
+      }
+
+      label {
+        display: block;
+        font-size: 11px;
+        color: #888;
+        margin-bottom: 3px;
+      }
+      input {
+        width: 100%;
+        background: #000;
+        border: 1px solid #8b4513;
+        color: #f1c40f;
+        padding: 10px;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 14px; /* 防止移动端聚焦缩放 */
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(to bottom, #8b0000, #500);
+        color: white;
+        border: 1px solid #ff4500;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      button:active {
+        transform: scale(0.98);
+        filter: brightness(1.2);
+      }
+      button:disabled {
+        opacity: 0.5;
+      }
+
+      /* 祭祀舞台 */
+      #stage {
+        flex: 1;
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      /* --- 🔥 拟真火苗 --- */
+      .fire-pit {
+        position: absolute;
+        bottom: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 100px;
+        z-index: 20;
+      }
+      .flame {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 50% 50% 20% 20%;
+        transform-origin: bottom center;
+        animation: flicker 0.1s ease-in infinite alternate;
+      }
+      .flame-red {
+        width: 100%;
+        height: 100%;
+        background: var(--fire-red);
+        opacity: 0.7;
+        filter: blur(8px);
+      }
+      .flame-orange {
+        width: 70%;
+        height: 80%;
+        background: var(--fire-orange);
+        bottom: 5px;
+        filter: blur(4px);
+      }
+      .flame-yellow {
+        width: 40%;
+        height: 50%;
+        background: var(--fire-yellow);
+        bottom: 10px;
+        filter: blur(1px);
+      }
+
+      @keyframes flicker {
+        0% {
+          transform: translateX(-50%) scale(1) rotate(-1deg);
+        }
+        100% {
+          transform: translateX(-51%) scale(1.1, 0.9) rotate(1deg);
+        }
+      }
+
+      /* --- 纸钱 --- */
+      .paper {
+        position: absolute;
+        width: 120px;
+        height: 60px;
+        background: var(--paper-gold);
+        border: 1px solid #daa520;
+        color: #8b4513;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        font-size: 16px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        z-index: 10;
+        /* 适配小屏幕 */
+      }
+
+      @media (max-width: 480px) {
+        .paper {
+          width: 100px;
+          height: 50px;
+          font-size: 14px;
+        }
+      }
+
+      .burning-anim {
+        animation: fallToFire 1.2s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94),
+          realBurn 2.5s 1s forwards linear;
+      }
+
+      @keyframes fallToFire {
+        0% {
+          transform: translateY(-100vh) rotate(0deg);
+          opacity: 0;
+        }
+        30% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(0) rotate(8deg);
+        }
+      }
+
+      @keyframes realBurn {
+        0% {
+          clip-path: inset(0% 0% 0% 0%);
+          filter: brightness(1);
+        }
+        15% {
+          background: linear-gradient(to top, #333 10%, var(--paper-gold) 30%);
+          box-shadow: 0 0 15px #ff4500;
+        }
+        100% {
+          clip-path: inset(100% 0% 0% 0%);
+          filter: brightness(0) blur(3px);
+        }
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 30;
+      }
+
+      #status-msg {
+        text-align: center;
+        font-size: 12px;
+        color: #888;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ui-panel">
+      <h1>赛博祭奠</h1>
+      <div
+        class="input-group"
+        style="margin-bottom: 10px"
+      >
+        <label>祭奠对象：</label>
+        <input
+          type="text"
+          id="target"
+          value="先祖"
+          placeholder="思念的人"
+        />
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label>单张面值：</label>
+          <input
+            type="number"
+            id="value"
+            value="10000"
+          />
+        </div>
+        <div class="input-group">
+          <label>数量（张）：</label>
+          <input
+            type="number"
+            id="qty"
+            value="3"
+            min="1"
+          />
+        </div>
+      </div>
+      <button id="startBtn">点燃纸钱</button>
+      <div id="status-msg">赛博祭奠，思念永存</div>
+    </div>
+
+    <div id="stage">
+      <div class="fire-pit">
+        <div class="flame flame-red"></div>
+        <div class="flame flame-orange"></div>
+        <div class="flame flame-yellow"></div>
+      </div>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+      const canvas = document.getElementById('canvas')
+      const ctx = canvas.getContext('2d')
+      const startBtn = document.getElementById('startBtn')
+      const stage = document.getElementById('stage')
+      const statusMsg = document.getElementById('status-msg')
+
+      let particles = []
+      let w, h
+
+      function resize() {
+        w = canvas.width = window.innerWidth
+        h = canvas.height = window.innerHeight
+      }
+      window.addEventListener('resize', resize)
+      resize()
+
+      class Particle {
+        constructor(x, y, type) {
+          this.x = x
+          this.y = y
+          this.type = type // spark or ash
+          this.life = 1
+          this.decay = Math.random() * 0.03 + 0.01
+          this.vx = (Math.random() - 0.5) * (type === 'spark' ? 6 : 2)
+          this.vy =
+            type === 'spark' ? -Math.random() * 8 - 3 : -Math.random() * 3 - 1
+          this.size =
+            type === 'spark' ? Math.random() * 3 + 1 : Math.random() * 4 + 2
+        }
+        update() {
+          this.x += this.vx + Math.sin(Date.now() * 0.01) * 0.5
+          this.y += this.vy
+          this.life -= this.decay
+        }
+        draw() {
+          ctx.globalAlpha = this.life
+          ctx.fillStyle = this.type === 'spark' ? '#ffcc00' : '#555'
+          ctx.beginPath()
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }
+
+      function createParticles(x, y) {
+        // 产生火星
+        for (let i = 0; i < 4; i++) particles.push(new Particle(x, y, 'spark'))
+        // 随机产生灰烬
+        if (Math.random() > 0.6) particles.push(new Particle(x, y, 'ash'))
+      }
+
+      async function spawnPaper(value) {
+        const p = document.createElement('div')
+        p.className = 'paper burning-anim'
+        p.innerHTML = `￥${value}`
+
+        // 移动端动态计算火堆位置
+        const fireRect = document
+          .querySelector('.fire-pit')
+          .getBoundingClientRect()
+        const startLeft =
+          fireRect.left + fireRect.width / 2 - (w < 480 ? 50 : 60)
+
+        p.style.left = startLeft + (Math.random() - 0.5) * 30 + 'px'
+        p.style.bottom = window.innerHeight - fireRect.bottom + 10 + 'px'
+
+        stage.appendChild(p)
+
+        // 监听燃烧时间点
+        const startTime = Date.now()
+        const interval = setInterval(() => {
+          const elapsed = Date.now() - startTime
+          if (elapsed > 1000 && elapsed < 3500) {
+            const rect = p.getBoundingClientRect()
+            // 在纸钱正在消失的底部边缘产生粒子
+            createParticles(rect.left + Math.random() * rect.width, rect.bottom)
+          }
+          if (elapsed >= 3500) {
+            clearInterval(interval)
+            p.remove()
+          }
+        }, 50)
+
+        // 每张纸张投递的时间间隔
+        await new Promise((r) => setTimeout(r, 256))
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, w, h)
+        particles = particles.filter((p) => p.life > 0)
+        particles.forEach((p) => {
+          p.update()
+          p.draw()
+        })
+        requestAnimationFrame(animate)
+      }
+      animate()
+
+      startBtn.onclick = async () => {
+        const target = document.getElementById('target').value || '先祖'
+        const value = document.getElementById('value').value
+        const qty = parseInt(document.getElementById('qty').value) || 1
+
+        startBtn.disabled = true
+        statusMsg.innerText = `正在向 ${target} 送去思念...`
+
+        for (let i = 0; i < qty; i++) {
+          await spawnPaper(value)
+        }
+
+        setTimeout(() => {
+          statusMsg.innerText = '祭祀完成。愿远方安好。'
+          startBtn.disabled = false
+        }, 2000)
+      }
+    </script>
+  </body>
+</html>
