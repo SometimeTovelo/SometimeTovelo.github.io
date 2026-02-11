@@ -1,161 +1,207 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>MBTI 极速人格测试</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
+<style>
+body{
+  margin:0;
+  font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto;
+  background: linear-gradient(135deg,#0f172a,#1e293b);
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+
+.card{
+  background:#111827;
+  width:420px;
+  max-width:92vw;
+  padding:28px;
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  animation:fadeIn .5s ease;
+}
+
+h1{margin:0 0 6px;font-size:26px}
+.sub{opacity:.7;font-size:13px;margin-bottom:18px}
+
+.progress{
+  height:8px;
+  background:#1f2937;
+  border-radius:99px;
+  overflow:hidden;
+  margin-bottom:18px;
+}
+.bar{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#38bdf8,#818cf8);
+  transition:width .35s ease;
+}
+
+.q{
+  font-size:20px;
+  margin:20px 0;
+  line-height:1.4;
+}
+
+.btn{
+  width:100%;
+  padding:14px;
+  margin:10px 0;
+  border-radius:12px;
+  border:1px solid #374151;
+  background:#0b1220;
+  color:#e5e7eb;
+  cursor:pointer;
+  transition:.2s;
+  font-size:15px;
+}
+.btn:hover{
+  background:#1f2937;
+  transform:translateY(-1px);
+}
+
+.result{
+  text-align:center;
+  animation:pop .4s ease;
+}
+
+.type{
+  font-size:52px;
+  font-weight:800;
+  letter-spacing:6px;
+  margin:12px 0;
+}
+
+.reset{
+  background:linear-gradient(90deg,#6366f1,#22d3ee);
+  border:none;
+  color:white;
+}
+
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(10px)}
+  to{opacity:1; transform:translateY(0)}
+}
+@keyframes pop{
+  from{opacity:0; transform:scale(.9)}
+  to{opacity:1; transform:scale(1)}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>MBTI 极速人格测试</h1>
+  <div class="sub">5题 · 秒出结果 · 娱乐向但有参考价值</div>
+
+  <div class="progress"><div class="bar" id="bar"></div></div>
+
+  <div id="app"></div>
+</div>
+
+<script>
 const questions = [
-  {
-    id: 1,
-    text: "周末你更愿意？",
-    options: [
-      { label: "和很多人一起活动", type: "E" },
-      { label: "独处或只和少数人", type: "I" },
-    ],
-  },
-  {
-    id: 2,
-    text: "做决定时你更依赖？",
-    options: [
-      { label: "逻辑和数据", type: "T" },
-      { label: "感受和价值观", type: "F" },
-    ],
-  },
-  {
-    id: 3,
-    text: "你更喜欢？",
-    options: [
-      { label: "计划清晰再行动", type: "J" },
-      { label: "边走边看更灵活", type: "P" },
-    ],
-  },
-  {
-    id: 4,
-    text: "获取信息时你更偏向？",
-    options: [
-      { label: "具体事实与经验", type: "S" },
-      { label: "概念和可能性", type: "N" },
-    ],
-  },
-  {
-    id: 5,
-    text: "在团队中你通常？",
-    options: [
-      { label: "主动发言带节奏", type: "E" },
-      { label: "观察后再表达", type: "I" },
-    ],
-  },
+{
+ text:"周末你更愿意？",
+ options:[
+  {t:"和很多人一起活动", k:"E"},
+  {t:"独处或只和少数人", k:"I"}
+ ]
+},
+{
+ text:"做决定时你更依赖？",
+ options:[
+  {t:"逻辑和数据", k:"T"},
+  {t:"感受和价值观", k:"F"}
+ ]
+},
+{
+ text:"你更喜欢？",
+ options:[
+  {t:"计划清晰再行动", k:"J"},
+  {t:"边走边看更灵活", k:"P"}
+ ]
+},
+{
+ text:"获取信息时你更偏向？",
+ options:[
+  {t:"事实细节", k:"S"},
+  {t:"概念可能性", k:"N"}
+ ]
+},
+{
+ text:"在团队中你通常？",
+ options:[
+  {t:"主动发言带节奏", k:"E"},
+  {t:"观察后再表达", k:"I"}
+ ]
+}
 ];
 
-function calcResult(answers) {
-  const score = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
-  answers.forEach((a) => score[a]++);
+let step=0;
+let answers=[];
 
-  const pick = (a, b) => (score[a] >= score[b] ? a : b);
-
-  return (
-    pick("E", "I") +
-    pick("S", "N") +
-    pick("T", "F") +
-    pick("J", "P")
-  );
+function updateBar(){
+  document.getElementById("bar").style.width =
+    (step/questions.length*100)+"%";
 }
 
-export default function MBTITestPage() {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState([]);
-  const [result, setResult] = useState(null);
-
-  const progress = (step / questions.length) * 100;
-
-  const choose = (type) => {
-    const next = [...answers, type];
-    setAnswers(next);
-
-    if (step + 1 === questions.length) {
-      setResult(calcResult(next));
-    }
-    setStep(step + 1);
-  };
-
-  const reset = () => {
-    setStep(0);
-    setAnswers([]);
-    setResult(null);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700 p-6">
-      <Card className="w-full max-w-xl rounded-2xl shadow-2xl">
-        <CardContent className="p-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2">MBTI 极速人格测试</h1>
-            <p className="text-sm opacity-70">5题 · 高质感动效 · 秒出结果</p>
-          </div>
-
-          {!result && (
-            <div className="mb-6">
-              <Progress value={progress} />
-              <p className="text-xs mt-2 opacity-60">
-                进度 {step}/{questions.length}
-              </p>
-            </div>
-          )}
-
-          <AnimatePresence mode="wait">
-            {!result ? (
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {questions[step] && (
-                  <div>
-                    <h2 className="text-xl font-semibold mb-6">
-                      {questions[step].text}
-                    </h2>
-
-                    <div className="grid gap-4">
-                      {questions[step].options.map((opt) => (
-                        <Button
-                          key={opt.label}
-                          className="h-14 text-base rounded-xl"
-                          variant="outline"
-                          onClick={() => choose(opt.type)}
-                        >
-                          {opt.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="result"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4 }}
-                className="text-center"
-              >
-                <div className="text-sm opacity-60 mb-2">你的MBTI类型</div>
-                <div className="text-5xl font-extrabold mb-4 tracking-widest">
-                  {result}
-                </div>
-                <p className="opacity-70 mb-6">
-                  这是一个快速版测试结果，仅供娱乐，但已经很有参考味道 😎
-                </p>
-
-                <Button onClick={reset} className="rounded-xl px-8">
-                  再测一次
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </CardContent>
-      </Card>
-    </div>
-  );
+function calc(){
+ let s={E:0,I:0,S:0,N:0,T:0,F:0,J:0,P:0};
+ answers.forEach(x=>s[x]++);
+ const pick=(a,b)=>s[a]>=s[b]?a:b;
+ return pick("E","I")+pick("S","N")+pick("T","F")+pick("J","P");
 }
+
+function choose(k){
+ answers.push(k);
+ step++;
+ render();
+}
+
+function reset(){
+ step=0;
+ answers=[];
+ render();
+}
+
+function render(){
+ updateBar();
+ const app=document.getElementById("app");
+
+ if(step>=questions.length){
+   const r=calc();
+   app.innerHTML=`
+     <div class="result">
+       <div>你的MBTI类型</div>
+       <div class="type">${r}</div>
+       <div style="opacity:.7;margin-bottom:18px">
+         快速测试结果，仅供娱乐 😎
+       </div>
+       <button class="btn reset" onclick="reset()">再测一次</button>
+     </div>`;
+   return;
+ }
+
+ const q=questions[step];
+ app.innerHTML=`
+   <div class="q">${q.text}</div>
+   ${q.options.map(o =>
+     `<button class="btn" onclick="choose('${o.k}')">${o.t}</button>`
+   ).join("")}
+ `;
+}
+
+render();
+</script>
+
+</body>
+</html>
